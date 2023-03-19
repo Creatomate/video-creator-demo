@@ -5,6 +5,8 @@ import { ElementState } from './ElementState';
 export class Renderer {
   /**
    * Called when the plugin is ready for use. Do not use any of the functions of this instance prior to this event.
+   *
+   * @see ready
    */
   onReady?: () => void;
 
@@ -37,13 +39,23 @@ export class Renderer {
    * Called when the playback time of the video has changed.
    *
    * @param time The current playback time in seconds.
+   * @see setTime()
    */
   onTimeChange?: (time: number) => void;
+
+  /**
+   * Called when the mouse tool has changed in interactive mode.
+   *
+   * @param tool Any of the available mouse tools; default, pen, text, ellipse, or rectangle.
+   * @see setTool()
+   */
+  onToolChange?: (tool: 'default' | 'pen' | 'text' | 'ellipse' | 'rectangle') => void;
 
   /**
    * Called when the active elements have changed in interactive mode.
    *
    * @param elementIds The IDs of the elements that are currently selected.
+   * @see setActiveElements()
    */
   onActiveElementsChange?: (elementIds: string[]) => void;
 
@@ -55,8 +67,23 @@ export class Renderer {
   onStateChange?: (state: RendererState) => void;
 
   /**
-   * The current state of the renderer.
-   * Do not change. To change the state, use 'loadTemplate()', 'setSource()', 'setModifications()', or 'applyModifications()'.
+   * The current mode as set in the constructor or 'setMode()'.
+   *
+   * @see constructor
+   * @see setMode()
+   */
+  mode: 'player' | 'interactive';
+
+  /**
+   * Whether the plugin is ready for use. Do no use any of the functions of this instance prior to the plugin is ready.
+   *
+   * @see onReady()
+   */
+  ready = false;
+
+  /**
+   * The current state of the renderer. Do not modify, this is a readonly property.
+   * To change the state, use 'loadTemplate()', 'setSource()', 'setModifications()', or 'applyModifications()'.
    * Subscribe to the 'onStateChange()' event to be notified when the state changes.
    *
    * @see loadTemplate()
@@ -79,6 +106,8 @@ export class Renderer {
    * @param publicToken Your project's public token. You can find your token in your Creatomate dashboard under project settings.
    */
   constructor(public element: HTMLDivElement, mode: 'player' | 'interactive', publicToken: string) {
+    this.mode = mode;
+
     const iframe = document.createElement('iframe');
     iframe.setAttribute('width', '100%');
     iframe.setAttribute('height', '100%');
@@ -89,6 +118,7 @@ export class Renderer {
     iframe.style.display = 'none';
 
     element.innerHTML = '';
+    element.style.overflow = 'hidden';
     element.append(iframe);
 
     window.addEventListener('message', this._handleMessage);
@@ -106,6 +136,17 @@ export class Renderer {
     this._iframe.setAttribute('src', '');
 
     this._pendingPromises = {};
+  }
+
+  /**
+   * Sets the mode. See the constructor for more information about these modes.
+   *
+   * @param mode 'player' or 'interactive' mode.
+   */
+  async setMode(mode: 'player' | 'interactive'): Promise<void> {
+    await this._sendCommand({ message: 'setMode', mode }).catch((error) => {
+      throw new Error(`Failed to set mode: ${error.message}`);
+    });
   }
 
   /**
@@ -149,7 +190,7 @@ export class Renderer {
    * @see https://creatomate.com/docs/json/introduction
    */
   getSource(
-    state: { source: Record<string, any>; elements?: ElementState[] } | undefined = this.state
+    state: { source: Record<string, any>; elements?: ElementState[] } | undefined = this.state,
   ): Record<string, any> {
     if (!state) {
       return {};
@@ -170,7 +211,7 @@ export class Renderer {
    * @return The elements in an array.
    */
   getElements(
-    state: { source: Record<string, any>; elements?: ElementState[] } | undefined = this.state
+    state: { source: Record<string, any>; elements?: ElementState[] } | undefined = this.state,
   ): ElementState[] {
     const elements = [];
     if (state) {
@@ -196,7 +237,7 @@ export class Renderer {
    */
   findElement(
     predicate: (element: ElementState) => boolean,
-    state: { source: Record<string, any>; elements?: ElementState[] } | undefined = this.state
+    state: { source: Record<string, any>; elements?: ElementState[] } | undefined = this.state,
   ): ElementState | undefined {
     if (state?.elements) {
       for (const element of state.elements) {
@@ -275,6 +316,18 @@ export class Renderer {
   }
 
   /**
+   * Sets the current mouse tool.
+   *
+   * @param tool Any of the available mouse tools; default, pen, text, ellipse, or rectangle.
+   * @see onToolChange()
+   */
+  async setTool(tool: 'default' | 'pen' | 'text' | 'ellipse' | 'rectangle') {
+    await this._sendCommand({ message: 'setTool', tool }).catch((error) => {
+      throw new Error(`Failed to set tool: ${error.message}`);
+    });
+  }
+
+  /**
    * Sets the currently selected elements when in interactive mode.
    *
    * @param elementIds The IDs of the elements to select.
@@ -294,7 +347,7 @@ export class Renderer {
    */
   async setTime(time: number): Promise<void> {
     return this._sendCommand({ message: 'setTime', time }).catch((error) => {
-      throw new Error(`Failed set time: ${error.message}`);
+      throw new Error(`Failed to set time: ${error.message}`);
     });
   }
 
@@ -320,9 +373,29 @@ export class Renderer {
     });
   }
 
-  private _sendCommand(message: Record<string, any>): Promise<any> {
+  /**
+   * Ensures that an asset can be used immediately as a source for a video, image, or audio element by caching it.
+   * As a result, the file is immediately available without waiting for the upload to complete.
+   *
+   * @param url The URL of the file. This URL won't be requested because the Blob should provide the file content already.
+   * @param blob The content of the file. Make sure that the file is available at the URL eventually,
+   *             as there is no guarantee that it will remain cached.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Blob
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Cache
+   */
+  cacheAsset(url: string, blob: Blob): Promise<void> {
+    return this._sendCommand({ message: 'cacheAsset', url }, { blob }).catch((error) => {
+      throw new Error(`Failed to cache asset: ${error.message}`);
+    });
+  }
+
+  private _sendCommand(message: Record<string, any>, payload?: Record<string, any>): Promise<any> {
+    if (!this.ready) {
+      throw new Error('The SDK is not yet ready. Please wait for the onReady event before calling any methods.');
+    }
+
     const id = uuid();
-    this._iframe.contentWindow?.postMessage({ id, ...JSON.parse(JSON.stringify(message)) }, '*');
+    this._iframe.contentWindow?.postMessage({ id, ...JSON.parse(JSON.stringify(message)), ...payload }, '*');
 
     // Create pending promise
     return new Promise((resolve, reject) => (this._pendingPromises[id] = { resolve, reject }));
@@ -352,6 +425,12 @@ export class Renderer {
     } else {
       switch (message) {
         case 'onReady':
+          // The component is ready to use
+          this.ready = true;
+
+          // Set the mode as provided in the constructor
+          this.setMode(this.mode).then();
+
           if (this.onReady) {
             this.onReady();
           }
@@ -384,6 +463,12 @@ export class Renderer {
         case 'onTimeChange':
           if (this.onTimeChange) {
             this.onTimeChange(args.time);
+          }
+          break;
+
+        case 'onToolChange':
+          if (this.onToolChange) {
+            this.onToolChange(args.tool);
           }
           break;
 
