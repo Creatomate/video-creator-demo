@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { ElementState } from '@creatomate/preview';
 import { videoCreator } from '../../stores/VideoCreatorStore';
@@ -10,13 +10,19 @@ interface TextInputProps {
 export const TextInput: React.FC<TextInputProps> = (props) => {
   const text = props.activeElement.source.text;
 
+  const htmlElement = useRef<HTMLTextAreaElement>(null);
+
   const [inputText, setInputText] = useState<string>(text);
   useEffect(() => {
-    setInputText(text);
+    // Update the value only when the input element is not focused
+    if (htmlElement.current !== document.activeElement) {
+      setInputText(text);
+    }
   }, [text]);
 
   return (
     <TextArea
+      ref={htmlElement}
       value={inputText}
       onChange={async (e) => {
         setInputText(e.target.value);
