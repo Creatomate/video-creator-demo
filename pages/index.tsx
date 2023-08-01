@@ -1,5 +1,7 @@
 import Head from 'next/head';
-import { VideoCreator } from '../components/VideoCreator';
+import dynamic from 'next/dynamic';
+
+const VideoCreator = dynamic(() => import('../components/VideoCreator'), { ssr: false });
 
 export default function Home() {
   return (

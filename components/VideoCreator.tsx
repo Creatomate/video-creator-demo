@@ -5,7 +5,7 @@ import { Timeline } from './timeline/Timeline';
 import { SidePanel } from './sidepanel/SidePanel';
 import { Stage } from './stage/Stage';
 
-export const VideoCreator: React.FC = observer(() => {
+const VideoCreator: React.FC = observer(() => {
   return (
     <Main>
       <MainView>
@@ -17,6 +17,8 @@ export const VideoCreator: React.FC = observer(() => {
     </Main>
   );
 });
+
+export default VideoCreator;
 
 const Main = styled.div`
   width: 100vw;
