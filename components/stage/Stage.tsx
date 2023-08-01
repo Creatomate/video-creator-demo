@@ -9,7 +9,7 @@ export const Stage: React.FC = observer(() => {
     <Main>
       <div
         ref={(element) => {
-          if (element && element !== videoCreator.renderer?.element) {
+          if (element && element !== videoCreator.preview?.element) {
             videoCreator.initializeVideoPlayer(element);
           }
         }}
@@ -61,7 +61,7 @@ export const Stage: React.FC = observer(() => {
         <ActionButton
           disabled={!videoCreator.state?.undo}
           onClick={() => {
-            videoCreator.renderer?.undo();
+            videoCreator.preview?.undo();
           }}
         >
           <svg width="24" height="24" fill="#fff">
@@ -71,7 +71,7 @@ export const Stage: React.FC = observer(() => {
         <ActionButton
           disabled={!videoCreator.state?.redo}
           onClick={() => {
-            videoCreator.renderer?.redo();
+            videoCreator.preview?.redo();
           }}
         >
           <svg width="24" height="24" fill="#fff">
@@ -85,9 +85,9 @@ export const Stage: React.FC = observer(() => {
         <ActionButton
           onClick={() => {
             if (!videoCreator.isPlaying) {
-              videoCreator.renderer?.play();
+              videoCreator.preview?.play();
             } else {
-              videoCreator.renderer?.pause();
+              videoCreator.preview?.pause();
             }
           }}
         >

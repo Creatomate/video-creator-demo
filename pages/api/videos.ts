@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Client, RenderOutputFormat } from 'creatomate';
 
-const client = new Client('YOUR_API_KEY_HERE');
+const client = new Client(process.env.CREATOMATE_API_KEY!);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 

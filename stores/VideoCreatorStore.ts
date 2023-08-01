@@ -1,15 +1,13 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { v4 as uuid } from 'uuid';
-import { Renderer } from '../renderer/Renderer';
-import { RendererState } from '../renderer/RendererState';
-import { ElementState } from '../renderer/ElementState';
+import { ElementState, Preview, PreviewState } from '@creatomate/preview';
 import { groupBy } from '../utility/groupBy';
 import { deepClone } from '../utility/deepClone';
 
 class VideoCreatorStore {
-  renderer?: Renderer = undefined;
+  preview?: Preview = undefined;
 
-  state?: RendererState = undefined;
+  state?: PreviewState = undefined;
 
   tracks?: Map<number, ElementState[]> = undefined;
 
@@ -30,46 +28,46 @@ class VideoCreatorStore {
   }
 
   initializeVideoPlayer(htmlElement: HTMLDivElement) {
-    if (this.renderer) {
-      this.renderer.dispose();
-      this.renderer = undefined;
+    if (this.preview) {
+      this.preview.dispose();
+      this.preview = undefined;
     }
 
-    const renderer = new Renderer(htmlElement, 'interactive', 'YOUR_PUBLIC_TOKEN_HERE');
+    const preview = new Preview(htmlElement, 'interactive', process.env.NEXT_PUBLIC_VIDEO_PLAYER_TOKEN!);
 
-    this.renderer = renderer;
+    this.preview = preview;
 
-    renderer.onReady = async () => {
-      await renderer.setSource(this.getDefaultSource());
+    preview.onReady = async () => {
+      await preview.setSource(this.getDefaultSource());
     };
 
-    renderer.onLoad = async () => {
+    preview.onLoad = async () => {
       runInAction(() => (this.isLoading = true));
     };
 
-    renderer.onLoadComplete = async () => {
+    preview.onLoadComplete = async () => {
       runInAction(() => (this.isLoading = false));
     };
 
-    renderer.onPlay = () => {
+    preview.onPlay = () => {
       runInAction(() => (this.isPlaying = true));
     };
 
-    renderer.onPause = () => {
+    preview.onPause = () => {
       runInAction(() => (this.isPlaying = false));
     };
 
-    renderer.onTimeChange = (time) => {
+    preview.onTimeChange = (time) => {
       if (!this.isScrubbing) {
         runInAction(() => (this.time = time));
       }
     };
 
-    renderer.onActiveElementsChange = (elementIds) => {
+    preview.onActiveElementsChange = (elementIds) => {
       runInAction(() => (this.activeElementIds = elementIds));
     };
 
-    renderer.onStateChange = (state) => {
+    preview.onStateChange = (state) => {
       runInAction(() => {
         this.state = state;
         this.tracks = groupBy(state.elements, (element) => element.track);
@@ -79,31 +77,31 @@ class VideoCreatorStore {
 
   async setTime(time: number): Promise<void> {
     this.time = time;
-    await this.renderer?.setTime(time);
+    await this.preview?.setTime(time);
   }
 
   async setActiveElements(...elementIds: string[]): Promise<void> {
     this.activeElementIds = elementIds;
-    await this.renderer?.setActiveElements(elementIds);
+    await this.preview?.setActiveElements(elementIds);
   }
 
   getActiveElement(): ElementState | undefined {
-    if (!this.renderer || this.activeElementIds.length === 0) {
+    if (!this.preview || this.activeElementIds.length === 0) {
       return undefined;
     }
 
     const id = videoCreator.activeElementIds[0];
-    return this.renderer.findElement((element) => element.source.id === id, this.state);
+    return this.preview.findElement((element) => element.source.id === id, this.state);
   }
 
   async createElement(elementSource: Record<string, any>): Promise<void> {
-    const renderer = this.renderer;
-    if (!renderer || !renderer.state) {
+    const preview = this.preview;
+    if (!preview || !preview.state) {
       return;
     }
 
-    const source = renderer.getSource();
-    const newTrack = Math.max(...renderer.state.elements.map((element) => element.track)) + 1;
+    const source = preview.getSource();
+    const newTrack = Math.max(...preview.state.elements.map((element) => element.track)) + 1;
 
     const id = uuid();
 
@@ -113,30 +111,30 @@ class VideoCreatorStore {
       ...elementSource,
     });
 
-    await renderer.setSource(source, true);
+    await preview.setSource(source, true);
 
     await this.setActiveElements(id);
   }
 
   async deleteElement(elementId: string): Promise<void> {
-    const renderer = this.renderer;
-    if (!renderer || !renderer.state) {
+    const preview = this.preview;
+    if (!preview || !preview.state) {
       return;
     }
 
-    // Clone the current renderer state
-    const state = deepClone(renderer.state);
+    // Clone the current preview state
+    const state = deepClone(preview.state);
 
     // Remove the element
     state.elements = state.elements.filter((element) => element.source.id !== elementId);
 
     // Set source by the mutated state
-    await renderer.setSource(renderer.getSource(state), true);
+    await preview.setSource(preview.getSource(state), true);
   }
 
   async rearrangeTracks(track: number, direction: 'up' | 'down'): Promise<void> {
-    const renderer = this.renderer;
-    if (!renderer || !renderer.state) {
+    const preview = this.preview;
+    if (!preview || !preview.state) {
       return;
     }
 
@@ -147,13 +145,13 @@ class VideoCreatorStore {
     }
 
     // Elements at provided track
-    const elementsCurrentTrack = renderer.state.elements.filter((element) => element.track === track);
+    const elementsCurrentTrack = preview.state.elements.filter((element) => element.track === track);
     if (elementsCurrentTrack.length === 0) {
       return;
     }
 
-    // Clone the current renderer state
-    const state = deepClone(renderer.state);
+    // Clone the current preview state
+    const state = deepClone(preview.state);
 
     // Swap track numbers
     for (const element of state.elements) {
@@ -165,12 +163,12 @@ class VideoCreatorStore {
     }
 
     // Set source by the mutated state
-    await renderer.setSource(renderer.getSource(state), true);
+    await preview.setSource(preview.getSource(state), true);
   }
 
   async finishVideo(): Promise<any> {
-    const renderer = this.renderer;
-    if (!renderer) {
+    const preview = this.preview;
+    if (!preview) {
       return;
     }
 
@@ -180,7 +178,7 @@ class VideoCreatorStore {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        source: renderer.getSource(),
+        source: preview.getSource(),
       }),
     });
 

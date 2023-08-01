@@ -1,5 +1,5 @@
 import React, { Fragment } from 'react';
-import { ElementState } from '../../renderer/ElementState';
+import { ElementState } from '@creatomate/preview';
 import { videoCreator } from '../../stores/VideoCreatorStore';
 import { Select } from '../Select';
 import { PropertyCaption } from './PropertyCaption';
@@ -31,7 +31,7 @@ export const AnimationSettings: React.FC<AnimationSettingsProps> = (props) => {
       newAnimations.push(animation);
     }
 
-    await videoCreator.renderer?.applyModifications({
+    await videoCreator.preview?.applyModifications({
       [`${props.activeElement.source.id}.animations`]: newAnimations,
     });
   };

@@ -1,6 +1,6 @@
 import React, { Fragment } from 'react';
 import styled from 'styled-components';
-import { ElementState } from '../../renderer/ElementState';
+import { ElementState } from '@creatomate/preview';
 import { VideoPreset } from './VideoPreset';
 import { PropertyCaption } from './PropertyCaption';
 import { PropertySelect } from './PropertySelect';

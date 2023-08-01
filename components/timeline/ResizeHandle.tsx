@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
-import { ElementState } from '../../renderer/ElementState';
+import { ElementState } from '@creatomate/preview';
 import { videoCreator } from '../../stores/VideoCreatorStore';
 import { Draggable } from '../Draggable';
 
@@ -25,7 +25,7 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = observer((props) => {
         let timeOffset = (data.x - context.startX) / timelineScale;
 
         if (props.side === 'start') {
-          let time = props.element.time + timeOffset;
+          let time = props.element.localTime + timeOffset;
           let duration = props.element.duration - timeOffset;
           if (time < 0) {
             duration += time;
@@ -36,7 +36,7 @@ export const ResizeHandle: React.FC<ResizeHandleProps> = observer((props) => {
         } else {
           const duration = Math.max(props.element.duration + timeOffset, 0.5);
 
-          props.onChange(props.element.time, duration);
+          props.onChange(props.element.localTime, duration);
         }
       }}
       onStop={() => {

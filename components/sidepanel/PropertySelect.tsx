@@ -1,6 +1,6 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { ElementState } from '../../renderer/ElementState';
+import { ElementState } from '@creatomate/preview';
 import { videoCreator } from '../../stores/VideoCreatorStore';
 import { Select } from '../Select';
 
@@ -16,7 +16,7 @@ export const PropertySelect: React.FC<PropertySelectProps> = observer((props) =>
     <Select
       value={props.activeElement.source[props.propertyName] ?? props.defaultValue}
       onChange={async (e) => {
-        await videoCreator.renderer?.applyModifications({
+        await videoCreator.preview?.applyModifications({
           [`${props.activeElement.source.id}.${props.propertyName}`]: e.target.value,
         });
       }}

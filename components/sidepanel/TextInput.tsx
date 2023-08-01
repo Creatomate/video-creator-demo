@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { ElementState } from '../../renderer/ElementState';
+import { ElementState } from '@creatomate/preview';
 import { videoCreator } from '../../stores/VideoCreatorStore';
 
 interface TextInputProps {
@@ -21,7 +21,7 @@ export const TextInput: React.FC<TextInputProps> = (props) => {
       onChange={async (e) => {
         setInputText(e.target.value);
 
-        await videoCreator.renderer?.applyModifications({
+        await videoCreator.preview?.applyModifications({
           [`${props.activeElement.source.id}.text`]: e.target.value,
         });
       }}

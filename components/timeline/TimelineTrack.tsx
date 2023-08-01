@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ElementState } from '../../renderer/ElementState';
+import { ElementState } from '@creatomate/preview';
 import { TimelineElement } from './TimelineElement';
 
 interface TimelineTrackProps {

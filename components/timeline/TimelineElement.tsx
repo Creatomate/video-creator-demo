@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
-import { ElementState } from '../../renderer/ElementState';
+import { ElementState } from '@creatomate/preview';
 import { videoCreator } from '../../stores/VideoCreatorStore';
 import { Draggable } from '../Draggable';
 import { ResizeHandle } from './ResizeHandle';
@@ -14,13 +14,13 @@ export const TimelineElement: React.FC<TimelineElementProps> = observer((props) 
   const active = videoCreator.activeElementIds.includes(props.element.source.id);
   const timelineScale = videoCreator.timelineScale;
 
-  const [placement, setPlacement] = useState({ time: props.element.time, duration: props.element.duration });
+  const [placement, setPlacement] = useState({ time: props.element.localTime, duration: props.element.duration });
   useEffect(() => {
-    setPlacement({ time: props.element.time, duration: props.element.duration });
-  }, [props.element.time, props.element.duration]);
+    setPlacement({ time: props.element.localTime, duration: props.element.duration });
+  }, [props.element.localTime, props.element.duration]);
 
   const applyPlacement = async () => {
-    await videoCreator.renderer?.applyModifications({
+    await videoCreator.preview?.applyModifications({
       [`${props.element.source.id}.time`]: placement.time,
       [`${props.element.source.id}.duration`]: placement.duration,
     });
@@ -35,7 +35,7 @@ export const TimelineElement: React.FC<TimelineElementProps> = observer((props) 
         onDrag={(e, data, context) => {
           const timeOffset = (data.x - context.startX) / timelineScale;
 
-          setPlacement({ time: Math.max(props.element.time + timeOffset, 0), duration: props.element.duration });
+          setPlacement({ time: Math.max(props.element.localTime + timeOffset, 0), duration: props.element.duration });
         }}
         onStop={() => {
           applyPlacement();
@@ -47,7 +47,7 @@ export const TimelineElement: React.FC<TimelineElementProps> = observer((props) 
             active={active}
             style={{
               left: placement.time * timelineScale,
-              width: (placement.duration - props.element.exit) * timelineScale,
+              width: (placement.duration - props.element.exitDuration) * timelineScale,
             }}
             onClick={() => {
               videoCreator.setActiveElements(props.element.source.id);
@@ -61,14 +61,14 @@ export const TimelineElement: React.FC<TimelineElementProps> = observer((props) 
       <ResizeHandle
         element={props.element}
         side='start'
-        time={props.element.time}
+        time={props.element.localTime}
         onChange={(time, duration) => setPlacement({ time, duration })}
         onComplete={applyPlacement}
       />
       <ResizeHandle
         element={props.element}
         side='end'
-        time={props.element.time + props.element.duration}
+        time={props.element.localTime + props.element.duration}
         onChange={(time, duration) => setPlacement({ time, duration })}
         onComplete={applyPlacement}
       />
