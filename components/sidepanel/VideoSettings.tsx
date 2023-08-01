@@ -44,11 +44,11 @@ export const VideoSettings: React.FC<VideoSettingsProps> = (props) => {
 
       <Information>
         To keep this demo to a minimum, only a few video properties are shown. See all capabilities in the{' '}
-        <a href="https://creatomate.com/docs/api/introduction" target="_blank">
+        <a href="https://creatomate.com/docs/api/introduction" target="_blank" rel="noreferrer">
           API documentation
         </a>{' '}
         and the Creatomate{' '}
-        <a href="https://creatomate.com/docs/template-editor/image" target="_blank">
+        <a href="https://creatomate.com/docs/template-editor/image" target="_blank" rel="noreferrer">
           template editor
         </a>
         .

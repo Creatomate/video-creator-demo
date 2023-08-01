@@ -55,11 +55,11 @@ export const TextSettings: React.FC<TextSettingsProps> = (props) => {
 
       <Information>
         To keep this demo to a minimum, only a few text properties are shown. See all capabilities in the{' '}
-        <a href="https://creatomate.com/docs/api/introduction" target="_blank">
+        <a href="https://creatomate.com/docs/api/introduction" target="_blank" rel="noreferrer">
           API documentation
         </a>{' '}
         and the Creatomate{' '}
-        <a href="https://creatomate.com/docs/template-editor/text" target="_blank">
+        <a href="https://creatomate.com/docs/template-editor/text" target="_blank" rel="noreferrer">
           template editor
         </a>
         .

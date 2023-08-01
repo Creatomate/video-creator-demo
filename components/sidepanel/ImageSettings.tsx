@@ -58,11 +58,11 @@ export const ImageSettings: React.FC<ImageSettingsProps> = (props) => {
 
       <Information>
         To keep this demo to a minimum, only a few image properties are shown. See all capabilities in the{' '}
-        <a href="https://creatomate.com/docs/api/introduction" target="_blank">
+        <a href="https://creatomate.com/docs/api/introduction" target="_blank" rel="noreferrer">
           API documentation
         </a>{' '}
         and the Creatomate{' '}
-        <a href="https://creatomate.com/docs/template-editor/image" target="_blank">
+        <a href="https://creatomate.com/docs/template-editor/image" target="_blank" rel="noreferrer">
           template editor
         </a>
         .
