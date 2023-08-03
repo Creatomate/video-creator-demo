@@ -14,7 +14,7 @@ interface PropertySelectProps {
 export const PropertySelect: React.FC<PropertySelectProps> = observer((props) => {
   return (
     <Select
-      value={props.activeElement.source[props.propertyName] ?? props.defaultValue}
+      value={String(props.activeElement.source[props.propertyName] ?? props.defaultValue)}
       onChange={async (e) => {
         await videoCreator.preview?.applyModifications({
           [`${props.activeElement.source.id}.${props.propertyName}`]: e.target.value,
