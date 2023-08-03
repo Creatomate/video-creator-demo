@@ -41,8 +41,8 @@ export const SidePanel: React.FC = observer(() => {
     <Main>
       <WelcomeScreen>
         <div>
-          Welcome to this video creator demo. This open source project shows how to integrate with the Creatomate Web
-          SDK to build your own video-powered applications.
+          Welcome to this video creator demo. This open source project shows how to integrate with the Creatomate
+          Preview SDK to build your own video-powered applications.
           <br />
           <br />
           To help you get started with the SDK, we have kept the code and UX as simple as possible. We encourage you to
