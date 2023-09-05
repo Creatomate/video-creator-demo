@@ -2,6 +2,7 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { videoCreator } from '../../stores/VideoCreatorStore';
+import { CompositionNavigation } from './CompositionNavigation';
 import { CreateButton } from './CreateButton';
 
 export const Stage: React.FC = observer(() => {
@@ -144,6 +145,8 @@ export const Stage: React.FC = observer(() => {
           </svg>
         </ActionButton>
       </BottomRightButtons>
+
+      <CompositionNavigation />
     </Main>
   );
 });

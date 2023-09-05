@@ -11,6 +11,8 @@ class VideoCreatorStore {
 
   tracks?: Map<number, ElementState[]> = undefined;
 
+  activeCompositionId: string | undefined = undefined;
+
   activeElementIds: string[] = [];
 
   isLoading = true;
@@ -63,15 +65,18 @@ class VideoCreatorStore {
       }
     };
 
+    preview.onActiveCompositionChange = (elementId) => {
+      this.activeCompositionId = elementId ?? undefined;
+      this.updateTracks();
+    };
+
     preview.onActiveElementsChange = (elementIds) => {
       runInAction(() => (this.activeElementIds = elementIds));
     };
 
     preview.onStateChange = (state) => {
-      runInAction(() => {
-        this.state = state;
-        this.tracks = groupBy(state.elements, (element) => element.track);
-      });
+      runInAction(() => (this.state = state));
+      this.updateTracks();
     };
   }
 
@@ -86,12 +91,13 @@ class VideoCreatorStore {
   }
 
   getActiveElement(): ElementState | undefined {
-    if (!this.preview || this.activeElementIds.length === 0) {
+    const preview = this.preview;
+    if (!preview || !preview.state || this.activeElementIds.length === 0) {
       return undefined;
     }
 
     const id = videoCreator.activeElementIds[0];
-    return this.preview.findElement((element) => element.source.id === id, this.state);
+    return preview.findElement((element) => element.source.id === id, preview.state);
   }
 
   async createElement(elementSource: Record<string, any>): Promise<void> {
@@ -185,7 +191,22 @@ class VideoCreatorStore {
     return await response.json();
   }
 
-  getDefaultSource() {
+  private updateTracks() {
+    const preview = this.preview;
+    if (!preview || !preview.state) {
+      return;
+    }
+
+    if (this.activeCompositionId) {
+      // Find the active composition element
+      const composition = preview.findElement((element) => element.source.id === this.activeCompositionId);
+      this.tracks = groupBy(composition?.elements ?? preview.state.elements, (element) => element.track);
+    } else {
+      this.tracks = groupBy(preview.state.elements, (element) => element.track);
+    }
+  }
+
+  private getDefaultSource() {
     // Replace this with your own JSON source
 
     return {

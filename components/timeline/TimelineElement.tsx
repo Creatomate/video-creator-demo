@@ -52,6 +52,11 @@ export const TimelineElement: React.FC<TimelineElementProps> = observer((props) 
             onClick={() => {
               videoCreator.setActiveElements(props.element.source.id);
             }}
+            onDoubleClick={() => {
+              if (props.element.source.type === 'composition') {
+                videoCreator.preview?.setActiveComposition(props.element.source.id);
+              }
+            }}
           >
             {props.element.source.name ??
               props.element.source.type[0].toUpperCase() + props.element.source.type.slice(1)}
@@ -60,14 +65,14 @@ export const TimelineElement: React.FC<TimelineElementProps> = observer((props) 
       </Draggable>
       <ResizeHandle
         element={props.element}
-        side='start'
+        side="start"
         time={props.element.localTime}
         onChange={(time, duration) => setPlacement({ time, duration })}
         onComplete={applyPlacement}
       />
       <ResizeHandle
         element={props.element}
-        side='end'
+        side="end"
         time={props.element.localTime + props.element.duration}
         onChange={(time, duration) => setPlacement({ time, duration })}
         onComplete={applyPlacement}

@@ -10,6 +10,18 @@ export const Playhead: React.FC = observer(() => {
   const time = videoCreator.time;
   const timelineScale = videoCreator.timelineScale;
 
+  // Get the active composition's appearance time
+  let compositionTime = 0;
+  if (videoCreator.activeCompositionId) {
+    const composition = videoCreator.preview?.findElement(
+      (element) => element.source.id === videoCreator.activeCompositionId,
+    );
+
+    if (composition) {
+      compositionTime = composition.globalTime;
+    }
+  }
+
   const scrubToTime = (time: number) => {
     runInAction(() => (videoCreator.isScrubbing = true));
     videoCreator.setTime(time).then(() => runInAction(() => (videoCreator.isScrubbing = false)));
@@ -30,7 +42,7 @@ export const Playhead: React.FC = observer(() => {
       onStop={() => {}}
     >
       {(ref, context) => (
-        <Main ref={ref} style={{ left: time * timelineScale }}>
+        <Main ref={ref} style={{ left: (time - compositionTime) * timelineScale }}>
           <Head />
           <Line />
         </Main>
