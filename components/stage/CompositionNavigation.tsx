@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { observer } from 'mobx-react-lite';
+import { ElementState } from '@creatomate/preview';
 import { videoCreator } from '../../stores/VideoCreatorStore';
 
 export const CompositionNavigation: React.FC = observer(() => {
@@ -22,8 +23,8 @@ export const CompositionNavigation: React.FC = observer(() => {
     compositionTrail.unshift(currentComposition);
 
     // Find the parent composition
-    currentComposition = preview.findElement((element) => {
-      return !!element.elements?.some((element) => element.source.id === currentComposition?.source.id);
+    currentComposition = preview.findElement((element: any) => {
+      return !!element.elements?.some((element: ElementState) => element.source.id === currentComposition?.source.id);
     });
   }
 

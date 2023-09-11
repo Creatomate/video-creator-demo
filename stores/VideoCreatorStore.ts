@@ -1,8 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { v4 as uuid } from 'uuid';
-import { ElementState, Preview, PreviewState } from '@creatomate/preview';
+import { CompositionState, ElementState, Preview, PreviewState } from '@creatomate/preview';
 import { groupBy } from '../utility/groupBy';
 import { deepClone } from '../utility/deepClone';
+import { deepFind } from '../utility/deepFind';
 
 class VideoCreatorStore {
   preview?: Preview = undefined;
@@ -66,7 +67,7 @@ class VideoCreatorStore {
     };
 
     preview.onActiveCompositionChange = (elementId) => {
-      this.activeCompositionId = elementId ?? undefined;
+      runInAction(() => (this.activeCompositionId = elementId ?? undefined));
       this.updateTracks();
     };
 
@@ -92,12 +93,71 @@ class VideoCreatorStore {
 
   getActiveElement(): ElementState | undefined {
     const preview = this.preview;
-    if (!preview || !preview.state || this.activeElementIds.length === 0) {
+    if (!preview || this.activeElementIds.length === 0) {
       return undefined;
     }
 
     const id = videoCreator.activeElementIds[0];
-    return preview.findElement((element) => element.source.id === id, preview.state);
+    return preview.findElement((element) => element.source.id === id);
+  }
+
+  getActiveComposition(): CompositionState | PreviewState | undefined {
+    const preview = this.preview;
+    if (!preview) {
+      return undefined;
+    } else if (this.activeCompositionId) {
+      // Find the active composition by its ID
+      return preview.findElement((element) => element.source.id === this.activeCompositionId);
+    } else {
+      return preview.state;
+    }
+  }
+
+  getActiveCompositionElements(): ElementState[] {
+    return this.getActiveComposition()?.elements ?? [];
+  }
+
+  getActiveCompositionSource(): Record<string, any> {
+    const preview = this.preview;
+    if (!preview || !preview.state) {
+      return [];
+    }
+
+    if (this.activeCompositionId) {
+      // Find the active composition based on its ID
+      const activeComposition = preview.findElement(
+        (element) => element.source.id === this.activeCompositionId,
+        preview.state,
+      );
+      // Get the composition's source
+      return preview.getSource(activeComposition);
+    } else {
+      return preview.getSource(preview.state);
+    }
+  }
+
+  async setActiveCompositionSource(source: Record<string, any>): Promise<void> {
+    const activeCompositionId = this.activeCompositionId;
+    if (activeCompositionId) {
+      const preview = this.preview;
+      if (preview) {
+        // Make a copy of the source before making changes
+        const fullSource = deepClone(preview.getSource());
+
+        // Find the active composition's source
+        const activeComposition = deepFind((element) => element.id === activeCompositionId, fullSource);
+        if (activeComposition) {
+          // Update the source in-place
+          Object.keys(activeComposition).forEach((key) => delete activeComposition[key]);
+          Object.assign(activeComposition, source);
+        }
+
+        // Apply the source
+        await preview.setSource(fullSource, true);
+      }
+    } else {
+      await this.preview?.setSource(source, true);
+    }
   }
 
   async createElement(elementSource: Record<string, any>): Promise<void> {
@@ -106,19 +166,29 @@ class VideoCreatorStore {
       return;
     }
 
-    const source = preview.getSource();
-    const newTrack = Math.max(...preview.state.elements.map((element) => element.track)) + 1;
+    // Get the active composition's elements
+    const elements = this.getActiveCompositionElements();
 
+    // Find a track number that's not already taken
+    const newTrackNumber = Math.max(...elements.map((element) => element.track)) + 1;
+
+    // Get the active composition's source
+    const source = deepClone(this.getActiveCompositionSource());
+
+    // Generate a new element ID
     const id = uuid();
 
+    // Insert the element
     source.elements.push({
       id,
-      track: newTrack,
+      track: newTrackNumber,
       ...elementSource,
     });
 
-    await preview.setSource(source, true);
+    // Apply the mutated source
+    await this.setActiveCompositionSource(source);
 
+    // Make the newly inserted element active
     await this.setActiveElements(id);
   }
 
@@ -128,14 +198,14 @@ class VideoCreatorStore {
       return;
     }
 
-    // Clone the current preview state
-    const state = deepClone(preview.state);
+    // Get the active composition's source
+    const source = deepClone(this.getActiveCompositionSource());
 
-    // Remove the element
-    state.elements = state.elements.filter((element) => element.source.id !== elementId);
+    // Remove the element by its ID
+    source.elements = source.elements.filter((element: Record<string, any>) => element.id !== elementId);
 
-    // Set source by the mutated state
-    await preview.setSource(preview.getSource(state), true);
+    // Apply the mutated source
+    await this.setActiveCompositionSource(source);
   }
 
   async rearrangeTracks(track: number, direction: 'up' | 'down'): Promise<void> {
@@ -150,26 +220,28 @@ class VideoCreatorStore {
       return;
     }
 
-    // Elements at provided track
-    const elementsCurrentTrack = preview.state.elements.filter((element) => element.track === track);
-    if (elementsCurrentTrack.length === 0) {
-      return;
-    }
-
-    // Clone the current preview state
-    const state = deepClone(preview.state);
+    // Get the active composition's source
+    const source = deepClone(this.getActiveCompositionSource());
 
     // Swap track numbers
-    for (const element of state.elements) {
-      if (element.track === track) {
-        element.source.track = targetTrack;
-      } else if (element.track === targetTrack) {
-        element.source.track = track;
+    for (const element of this.getActiveCompositionElements()) {
+      // Find the element's source by its ID
+      const elementSource = source.elements?.find(
+        (elementSource: Record<string, any>) => elementSource.id === element.source.id,
+      );
+
+      // Apply the new track number
+      if (elementSource) {
+        if (element.track === track) {
+          elementSource.track = targetTrack;
+        } else if (element.track === targetTrack) {
+          elementSource.track = track;
+        }
       }
     }
 
-    // Set source by the mutated state
-    await preview.setSource(preview.getSource(state), true);
+    // Apply the mutated source
+    await this.setActiveCompositionSource(source);
   }
 
   async finishVideo(): Promise<any> {
@@ -192,18 +264,7 @@ class VideoCreatorStore {
   }
 
   private updateTracks() {
-    const preview = this.preview;
-    if (!preview || !preview.state) {
-      return;
-    }
-
-    if (this.activeCompositionId) {
-      // Find the active composition element
-      const composition = preview.findElement((element) => element.source.id === this.activeCompositionId);
-      this.tracks = groupBy(composition?.elements ?? preview.state.elements, (element) => element.track);
-    } else {
-      this.tracks = groupBy(preview.state.elements, (element) => element.track);
-    }
+    this.tracks = groupBy(this.getActiveCompositionElements(), (element) => element.track);
   }
 
   private getDefaultSource() {
