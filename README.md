@@ -7,11 +7,11 @@ This is a demo application showing how to build advanced video editing apps usin
 
 ## Usage
 
-1. Create a new file called `.env.local` in the root of the project, providing your **API Key** and **Video Player Token**:
+1. Create a new file called `.env.local` in the root of the project, providing your **API Key** and **Public Token**:
 
 ```
 CREATOMATE_API_KEY=...
-NEXT_PUBLIC_VIDEO_PLAYER_TOKEN=...
+NEXT_PUBLIC_CREATOMATE_PUBLIC_TOKEN=...
 ```
 
 2. Install all NPM dependencies using the following command:

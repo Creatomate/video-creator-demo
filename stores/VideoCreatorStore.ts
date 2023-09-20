@@ -36,7 +36,7 @@ class VideoCreatorStore {
       this.preview = undefined;
     }
 
-    const preview = new Preview(htmlElement, 'interactive', process.env.NEXT_PUBLIC_VIDEO_PLAYER_TOKEN!);
+    const preview = new Preview(htmlElement, 'interactive', process.env.NEXT_PUBLIC_CREATOMATE_PUBLIC_TOKEN!);
 
     this.preview = preview;
 
