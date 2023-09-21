@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import styled from 'styled-components';
 import { videoCreator } from '../../stores/VideoCreatorStore';
@@ -7,6 +7,11 @@ import { ImageSettings } from './ImageSettings';
 import { VideoSettings } from './VideoSettings';
 
 export const SidePanel: React.FC = observer(() => {
+  // This effect watches for changes to the state object.
+  // Without it, the settings panel wouldn't update when a property on an element changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {}, [videoCreator.state]);
+
   const activeElement = videoCreator.getActiveElement();
 
   if (activeElement) {
